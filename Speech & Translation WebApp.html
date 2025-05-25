@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech & Translation App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 18px;
+            width: 60%;
+            margin: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 22px;
+            background-color: #ffad99; /* Peach color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #ff8c73; /* Darker peach on hover */
+        }
+        .translations {
+            margin-top: 30px;
+            color: white; /* Make all text white */
+        }
+        .translations p {
+            font-size: 20px;
+            margin: 10px;
+        }
+        .language-selector {
+            margin-top: 20px;
+            color: white; /* Change text color to white */
+        }
+        select {
+            font-size: 18px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body>
+   
+    <div class="container">
+   
+        <input type="text" id="textInput" placeholder="Type text here" size="50">
+        <button onclick="speakText()">Speak</button>
+    </div>
+
+    <div class="language-selector">
+        <label for="languageSelect" style="color: white;">Choose Your Theme:</label>
+        <select id="languageSelect" onchange="changeBackground()">
+            <option value="urdu">Urdu</option>
+            <option value="pashto">Pashto</option>
+            <option value="arabic">Arabic</option>
+            <option value="chinese">Chinese</option>
+        </select>
+    </div>
+
+    <div class="translations">
+        <p><strong>English:</strong> <span id="englishText"></span></p>
+        <p><strong>Urdu:</strong> <span id="urduText"></span></p>
+        <p><strong>Arabic:</strong> <span id="arabicText"></span></p>
+        <p><strong>Chinese:</strong> <span id="chineseText"></span></p>
+        <p><strong>Pashto:</strong> <span id="pashtoText"></span></p>
+    </div>
+
+    <div class="background" id="background"></div>
+
+    <script>
+        // Predefined translations for common phrases
+        const translations = {
+            "hello": {
+                "urdu": "ہیلو",
+                "arabic": "مرحباً",
+                "chinese": "你好",
+                "pashto": "سلام"
+            },
+            "how are you?": {
+                "urdu": "آپ کیسے ہیں؟",
+                "arabic": "كيف حالك؟",
+                "chinese": "你好吗?",
+                "pashto": "څنګه یی؟"
+            },
+            "good morning": {
+                "urdu": "گڈ مارننگ",
+                "arabic": "صباح الخير",
+                "chinese": "早安",
+                "pashto": "سهار مو پخير"
+            },
+            "good night": {
+                "urdu": "شب بخیر",
+                "arabic": "تصبح على خير",
+                "chinese": "晚安",
+                "pashto": "شپه مو پخير"
+            },
+            "thank you": {
+                "urdu": "شکریہ",
+                "arabic": "شكراً",
+                "chinese": "谢谢",
+                "pashto": "مننه"
+            },
+            "please": {
+                "urdu": "براہ کرم",
+                "arabic": "من فضلك",
+                "chinese": "请",
+                "pashto": "لطفاً"
+            },
+            "excuse me": {
+                "urdu": "معاف کیجئے گا",
+                "arabic": "عفواً",
+                "chinese": "对不起",
+                "pashto": "بخښنه غواړم"
+            },
+            "sorry": {
+                "urdu": "معاف کریں",
+                "arabic": "آسف",
+                "chinese": "对不起",
+                "pashto": "بخښنه غواړم"
+            },
+            "goodbye": {
+                "urdu": "خدا حافظ",
+                "arabic": "وداعاً",
+                "chinese": "再见",
+                "pashto": "خدا حافظ"
+            },
+            "yes": {
+                "urdu": "ہاں",
+                "arabic": "نعم",
+                "chinese": "是的",
+                "pashto": "هو"
+            },
+            "no": {
+                "urdu": "نہیں",
+                "arabic": "لا",
+                "chinese": "不",
+                "pashto": "نه"
+            },
+            "how much is this?": {
+                "urdu": "یہ کتنے کا ہے؟",
+                "arabic": "كم ثمن هذا؟",
+                "chinese": "这个多少钱？",
+                "pashto": "دا څومره دی؟"
+            },
+            "where is the bathroom?": {
+                "urdu": "باتھروم کہاں ہے؟",
+                "arabic": "أين الحمام؟",
+                "chinese": "厕所在哪里？",
+                "pashto": "تشویش چیرته دی؟"
+            },
+            "I love you": {
+                "urdu": "میں تم سے محبت کرتا ہوں",
+                "arabic": "أحبك",
+                "chinese": "我爱你",
+                "pashto": "زه تا سره مینه لرم"
+            },
+            "congratulations": {
+                "urdu": "مبارک ہو",
+                "arabic": "مبروك",
+                "chinese": "恭喜",
+                "pashto": "مبارک شه"
+            },
+            "sorry for the inconvenience": {
+                "urdu": "تکلیف کے لیے معذرت",
+                "arabic": "آسف على الإزعاج",
+                "chinese": "抱歉给您带来的不便",
+                "pashto": "د زحمت له پاره بخښنه غواړم"
+            },
+            "what time is it?": {
+                "urdu": "کتنا بجا ہے؟",
+                "arabic": "كم الساعة؟",
+                "chinese": "现在几点了？",
+                "pashto": "څو بجې دي؟"
+            },
+            "can you help me?": {
+                "urdu": "کیا آپ میری مدد کر سکتے ہیں؟",
+                "arabic": "هل يمكنك مساعدتي؟",
+                "chinese": "你能帮我吗？",
+                "pashto": "تاسو کولی شئ زما سره مرسته وکړئ؟"
+            },
+            "I don't understand": {
+                "urdu": "مجھے نہیں سمجھ آیا",
+                "arabic": "لا أفهم",
+                "chinese": "我不明白",
+                "pashto": "زه نه پوهیږم"
+            },
+            "water": {
+                "urdu": "پانی",
+                "arabic": "ماء",
+                "chinese": "水",
+                "pashto": "اوبه"
+            },
+            "food": {
+                "urdu": "کھانا",
+                "arabic": "طعام",
+                "chinese": "食物",
+                "pashto": "خوړه"
+            },
+            "I'm tired": {
+                "urdu": "مجھے تھکاوٹ ہو رہی ہے",
+                "arabic": "أنا متعب",
+                "chinese": "我累了",
+                "pashto": "زه ستړی یم"
+            },
+            "I don't speak much [language]": {
+                "urdu": "میں زیادہ [زبان] نہیں بولتا",
+                "arabic": "أنا لا أتحدث الكثير من [اللغة]",
+                "chinese": "我不太会说[语言]",
+                "pashto": "زه ډیر [ژبه] نه وایم"
+            },
+            "I am lost": {
+                "urdu": "میں راستہ بھٹک گیا ہوں",
+                "arabic": "أنا ضائع",
+                "chinese": "我迷路了",
+                "pashto": "زه ورکه یم"
+            },
+            "call the police": {
+                "urdu": "پولیس کو بلاؤ",
+                "arabic": "اتصل بالشرطة",
+                "chinese": "打电话给警察",
+                "pashto": "پولیس ته زنګ ووهه"
+            },
+            "where is the hospital?": {
+                "urdu": "ہسپتال کہاں ہے؟",
+                "arabic": "أين المستشفى؟",
+                "chinese": "医院在哪里？",
+                "pashto": "نړیواله روغتون چیرته دی؟"
+            },
+            "help!": {
+                "urdu": "مدد کریں!",
+                "arabic": "مساعدة!",
+                "chinese": "救命!",
+                "pashto": "مرسته وکړئ!"
+            },
+            "fire!": {
+                "urdu": "آگ!",
+                "arabic": "حريق!",
+                "chinese": "火灾!",
+                "pashto": "اور!"
+            },
+            "get well soon": {
+                "urdu": "جلد صحت یاب ہوں",
+                "arabic": "سلامتك",
+                "chinese": "早日康复",
+                "pashto": "ژر ښه شئ"
+            },
+            "happy birthday": {
+                "urdu": "سالگرہ مبارک ہو",
+                "arabic": "عيد ميلاد سعيد",
+                "chinese": "生日快乐",
+                "pashto": "د زیږون ورځ خوشحاله"
+            },
+            "good luck": {
+                "urdu": "آپ کو خوش قسمت ہو",
+                "arabic": "حظا سعيدا",
+                "chinese": "祝好运",
+                "pashto": "ښه بخت"
+            },
+            "where are you from?": {
+                "urdu": "آپ کہاں سے ہیں؟",
+                "arabic": "من أين أنت؟",
+                "chinese": "你来自哪里？",
+                "pashto": "تاسو له کوم ځای څخه یاست؟"
+            },
+            "what is your name?": {
+                "urdu": "آپ کا نام کیا ہے؟",
+                "arabic": "ما اسمك؟",
+                "chinese": "你叫什么名字？",
+                "pashto": "ستا نوم څه دی؟"
+            },
+            "I am from [country]": {
+                "urdu": "میں [ملک] سے ہوں",
+                "arabic": "أنا من [البلد]",
+                "chinese": "我来自[国家]",
+                "pashto": "زه د [هیواد] یم"
+            },
+            "see you later": {
+                "urdu": "پھر ملیں گے",
+                "arabic": "أراك لاحقًا",
+                "chinese": "再见",
+                "pashto": "ترلاسه کوه"
+            },
+            "have a good day": {
+                "urdu": "آپ کا دن اچھا گزرے",
+                "arabic": "أتمنى لك يوماً سعيداً",
+                "chinese": "祝你有美好的一天",
+                "pashto": "ښہ ورځ ولرئ"
+            },
+            "I am hungry": {
+                "urdu": "مجھے بھوک لگی ہے",
+                "arabic": "أنا جائع",
+                "chinese": "我饿了",
+                "pashto": "زه لوږه یم"
+            },
+            "what's the matter?": {
+                "urdu": "کیا بات ہے؟",
+                "arabic": "ما المشكلة؟",
+                "chinese": "怎么了？",
+                "pashto": "کومه خبره ده؟"
+            },
+            "wait a minute": {
+                "urdu": "ایک منٹ انتظار کریں",
+                "arabic": "انتظر دقيقة",
+                "chinese": "等一下",
+                "pashto": "یو دقیقه انتظار وکړئ"
+            },
+            "I am sorry for your loss": {
+                "urdu": "مجھے آپ کے نقصان پر افسوس ہے",
+                "arabic": "أنا آسف لخسارتك",
+                "chinese": "对你的损失感到抱歉",
+                "pashto": "زما د زړه غم دی ستاسو د تاوان لپاره"
+            },
+            "can I take a photo?": {
+                "urdu": "کیا میں تصویر لے سکتا ہوں؟",
+                "arabic": "هل يمكنني أخذ صورة؟",
+                "chinese": "我可以拍照吗？",
+                "pashto": "زه کولی شم عکس واخلم؟"
+            },
+            "call me": {
+                "urdu": "مجھے فون کریں",
+                "arabic": "اتصل بي",
+                "chinese": "给我打电话",
+                "pashto": "ما ته زنګ ووهه"
+            },
+            "how do I get to [place]?": {
+                "urdu": "میں [جگہ] کیسے پہنچوں؟",
+                "arabic": "كيف أذهب إلى [المكان]؟",
+                "chinese": "我怎么去[地方]？",
+                "pashto": "زه څنګه [ځای] ته ورسیږم؟"
+            },
+            "where can I find a taxi?": {
+                "urdu": "مجھے کہاں ٹیکسی ملے گی؟",
+                "arabic": "أين يمكنني العثور على تاكسي؟",
+                "chinese": "我在哪里可以找到出租车？",
+                "pashto": "زه چیرته ټیکسي پیدا کولی شم؟"
+            },
+            "what's your phone number?": {
+                "urdu": "آپ کا فون نمبر کیا ہے؟",
+                "arabic": "ما هو رقم هاتفك؟",
+                "chinese": "你的电话号码是多少？",
+                "pashto": "ستا د ټلیفون شمیره څه ده؟"
+            },
+            "what is the weather like?": {
+                "urdu": "موسم کیسا ہے؟",
+                "arabic": "كيف الطقس؟",
+                "chinese": "天气怎么样？",
+                "pashto": "هوا څنګه ده؟"
+            },
+            "it is hot": {
+                "urdu": "یہ گرم ہے",
+                "arabic": "إنه حار",
+                "chinese": "很热",
+                "pashto": "دا ګرم دی"
+            },
+            "it is cold": {
+                "urdu": "یہ سرد ہے",
+                "arabic": "إنه بارد",
+                "chinese": "很冷",
+                "pashto": "دا یخ دی"
+            },
+            "can I have the bill?": {
+                "urdu": "کیا مجھے بل مل سکتا ہے؟",
+                "arabic": "هل يمكنني الحصول على الفاتورة؟",
+                "chinese": "我可以结账吗？",
+                "pashto": "زه کولی شم بل ترلاسه کړم؟"
+            },
+            "can I try it on?": {
+                "urdu": "کیا میں اسے آزما سکتا ہوں؟",
+                "arabic": "هل يمكنني تجربتها؟",
+                "chinese": "我可以试穿吗？",
+                "pashto": "زه کولی شم دا وازموم؟"
+            },
+            "where is the nearest restaurant?": {
+                "urdu": "قریبی ریستوران کہاں ہے؟",
+                "arabic": "أين أقرب مطعم؟",
+                "chinese": "最近的餐厅在哪里？",
+                "pashto": "نږدې رستوران چیرته دی؟"
+            },
+            "do you speak English?": {
+                "urdu": "کیا آپ انگریزی بولتے ہیں؟",
+                "arabic": "هل تتكلم الإنجليزية؟",
+                "chinese": "你会说英语吗？",
+                "pashto": "ایا تاسو انګلیسي خبرې کوئ؟"
+            },
+            "what is this?": {
+                "urdu": "یہ کیا ہے؟",
+                "arabic": "ما هذا؟",
+                "chinese": "这是什么？",
+                "pashto": "دا څه شی دی؟"
+            },
+            "do you have Wi-Fi?": {
+                "urdu": "کیا آپ کے پاس وائی فائی ہے؟",
+                "arabic": "هل لديك واي فاي؟",
+                "chinese": "你有无线网络吗？",
+                "pashto": "آیا تاسو وائی فای لرئ؟"
+            },
+            "can I help you?": {
+                "urdu": "کیا میں آپ کی مدد کر سکتا ہوں؟",
+                "arabic": "هل يمكنني مساعدتك؟",
+                "chinese": "我能帮你吗？",
+                "pashto": "زه کولی شم ستاسو سره مرسته وکړم؟"
+            },
+            "good job": {
+                "urdu": "اچھا کام",
+                "arabic": "عمل جيد",
+                "chinese": "做得好",
+                "pashto": "ښه کار"
+            },
+            "have a seat": {
+                "urdu": "بیٹھ جائیں",
+                "arabic": "تفضل بالجلوس",
+                "chinese": "请坐",
+                "pashto": "کښینئ"
+            },
+            "it's okay": {
+                "urdu": "کوئی بات نہیں",
+                "arabic": "لا بأس",
+                "chinese": "没关系",
+                "pashto": "دا ښه دی"
+            },
+            "take care": {
+                "urdu": "خیال رکھنا",
+                "arabic": "اعتني بنفسك",
+                "chinese": "保重",
+                "pashto": "پاملرنه وکړئ"
+            },
+            "let's go": {
+                "urdu": "چلیں چلیں",
+                "arabic": "لنذهب",
+                "chinese": "我们走吧",
+                "pashto": "راځئ چې ولاړ شو"
+            }
+        };
+        // Function to speak the text entered in the input box
+        function speakText() {
+            const text = document.getElementById("textInput").value.trim().toLowerCase();
+            const speech = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(speech);
+
+            // Check for translations (case insensitive)
+            if (translations[text]) {
+                document.getElementById("englishText").innerText = text;
+                document.getElementById("urduText").innerText = translations[text]["urdu"];
+                document.getElementById("arabicText").innerText = translations[text]["arabic"];
+                document.getElementById("chineseText").innerText = translations[text]["chinese"];
+                document.getElementById("pashtoText").innerText = translations[text]["pashto"];
+            } else {
+                document.getElementById("englishText").innerText = text;
+                document.getElementById("urduText").innerText = "Translation not available";
+                document.getElementById("arabicText").innerText = "Translation not available";
+                document.getElementById("chineseText").innerText = "Translation not available";
+                document.getElementById("pashtoText").innerText = "Translation not available";
+            }
+        }
+
+        // Function to change background image based on selected language
+        function changeBackground() {
+            const selectedLanguage = document.getElementById("languageSelect").value;
+            const backgroundElement = document.getElementById("background");
+
+            switch (selectedLanguage) {
+                case "urdu":
+                    backgroundElement.style.backgroundImage = "url('file:///C:/Users/Desktop/Desktop/Project/urdu.jpg')";
+                    break;
+                case "pashto":
+                    backgroundElement.style.backgroundImage = "url('file:///C:/Users/Desktop/Desktop/Project/pashto.jpg')";
+                    break;
+                case "arabic":
+                    backgroundElement.style.backgroundImage = "url('file:///C:/Users/Desktop/Desktop/Project/arabic.jpg')";
+                    break;
+                case "chinese":
+                    backgroundElement.style.backgroundImage = "url('file:///C:/Users/Desktop/Desktop/Project/Chinese.jpg')";
+                    break;
+                default:
+                    backgroundElement.style.backgroundImage = "none";
+            }
+        }
+
+        // Set default background when the page loads
+        window.onload = changeBackground;
+    </script>
+</body>
+</html>
